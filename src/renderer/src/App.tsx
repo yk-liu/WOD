@@ -19,9 +19,9 @@ type AppConfig = {
   warnTime: number;
   wipeTime: number;
   theme: 'system' | 'light' | 'dark';
-  fontFamily: string; 
-  maxWidth: number;   
-  fontSize: number;   
+  fontFamily: string;
+  maxWidth: number;
+  fontSize: number;
 };
 
 const DEFAULT_CONFIG: AppConfig = {
@@ -79,9 +79,8 @@ const SettingsModal = ({
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-150 ${
-        isOpen ? 'bg-black/40 opacity-100 pointer-events-auto' : 'bg-black/0 opacity-0 pointer-events-none'
-      }`}
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-150 ${isOpen ? 'bg-black/40 opacity-100 pointer-events-auto' : 'bg-black/0 opacity-0 pointer-events-none'
+        }`}
     >
       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl max-w-md w-full border border-gray-200 dark:border-gray-700 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
@@ -90,16 +89,16 @@ const SettingsModal = ({
         </div>
 
         <div className="space-y-6">
-           {/* Visual Settings */}
-           <div>
+          {/* Visual Settings */}
+          <div>
             <label className="block text-xs font-bold uppercase text-gray-500 mb-2 flex justify-between">
               <span>Editor Width</span>
               <span>{localConfig.maxWidth}ch</span>
             </label>
-            <input 
-              type="range" 
-              min="30" 
-              max="120" 
+            <input
+              type="range"
+              min="30"
+              max="120"
               value={localConfig.maxWidth}
               onChange={(e) => handleChange('maxWidth', parseInt(e.target.value))}
               className="w-full accent-red-600"
@@ -108,13 +107,13 @@ const SettingsModal = ({
 
           <div>
             <label className="block text-xs font-bold uppercase text-gray-500 mb-2 flex justify-between">
-               <span>Font Size</span>
-               <span>{localConfig.fontSize}px</span>
+              <span>Font Size</span>
+              <span>{localConfig.fontSize}px</span>
             </label>
-            <input 
-              type="range" 
-              min="12" 
-              max="32" 
+            <input
+              type="range"
+              min="12"
+              max="32"
               value={localConfig.fontSize}
               onChange={(e) => handleChange('fontSize', parseInt(e.target.value))}
               className="w-full accent-red-600"
@@ -123,15 +122,15 @@ const SettingsModal = ({
 
           <div>
             <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Font Family</label>
-            <input 
-              type="text" 
+            <input
+              type="text"
               value={localConfig.fontFamily}
               onChange={(e) => handleChange('fontFamily', e.target.value)}
               placeholder="e.g. Helvetica, Arial, sans-serif"
               className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded font-mono text-sm"
             />
           </div>
-          
+
           <hr className="border-gray-200 dark:border-gray-700" />
 
           {/* Defaults */}
@@ -183,7 +182,7 @@ const SettingsModal = ({
           </div>
         </div>
 
-        <button 
+        <button
           onClick={handleSave}
           className="mt-6 w-full bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-400 text-white font-bold py-3 rounded transition-colors"
         >
@@ -197,9 +196,9 @@ const SettingsModal = ({
 // --- MAIN APP ---
 
 export default function App() {
-  const [appState, setAppState] = useState('config'); 
+  const [appState, setAppState] = useState('config');
   const [config, setConfig] = useState<AppConfig>(DEFAULT_CONFIG);
-  
+
   const [text, setText] = useState('');
   const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
   const [lastTypeTime, setLastTypeTime] = useState(Date.now());
@@ -235,9 +234,9 @@ export default function App() {
     }
 
     return () => {
-       if ((window as any).electron && (window as any).electron.ipcRenderer) {
-         (window as any).electron.ipcRenderer.removeAllListeners('open-settings');
-       }
+      if ((window as any).electron && (window as any).electron.ipcRenderer) {
+        (window as any).electron.ipcRenderer.removeAllListeners('open-settings');
+      }
     };
   }, []);
 
@@ -274,7 +273,7 @@ export default function App() {
   useEffect(() => {
     const root = window.document.documentElement;
     root.classList.remove('light', 'dark');
-    
+
     if (config.theme === 'system') {
       if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
         root.classList.add('dark');
@@ -296,14 +295,14 @@ export default function App() {
         const currentIdle = (now - lastTypeTime) / 1000;
         if (currentIdle >= config.wipeTime) {
           failSession();
-          return; 
+          return;
         }
         const sSeconds = sessionStartTime ? (now - sessionStartTime) / 1000 : 0;
         const tSeconds = config.targetMinutes * 60;
         if (sSeconds >= tSeconds && currentIdle >= 10 && !isAutoSavedPostTarget) {
           saveToLocalStorage(text, true);
           addToast('Auto-saved (Target Reached)');
-          setIsAutoSavedPostTarget(true); 
+          setIsAutoSavedPostTarget(true);
         }
       }
       requestRef.current = requestAnimationFrame(animate);
@@ -316,10 +315,10 @@ export default function App() {
   useEffect(() => {
     if (appState !== 'active' || !hasStartedTyping) return;
     const interval = window.setInterval(() => {
-        saveToLocalStorage(textRef.current, false);
+      saveToLocalStorage(textRef.current, false);
     }, 10000);
     return () => window.clearInterval(interval);
-  }, [appState, hasStartedTyping, config]); 
+  }, [appState, hasStartedTyping, config]);
 
   // -- EFFECT: AUTO-SAVE FILE ON TARGET REACHED --
   useEffect(() => {
@@ -355,7 +354,8 @@ export default function App() {
     updateDefaults(newConfig, true);
     setAppState('active');
     setText('');
-    setSessionStartTime(Date.now());
+    // Timer should start on first keystroke, not when pressing START SESSION
+    setSessionStartTime(null);
     setLastTypeTime(Date.now());
     setHasStartedTyping(false);
     setIsAutoSavedPostTarget(false);
@@ -363,7 +363,7 @@ export default function App() {
 
   const failSession = () => {
     setAppState('failed');
-    setText(''); 
+    setText('');
     localStorage.removeItem(STORAGE_KEY);
   };
 
@@ -383,8 +383,8 @@ export default function App() {
     const a = document.createElement('a');
     a.href = url;
     const date = new Date();
-    const fmt = (n: number) => n.toString().padStart(2,'0');
-    a.download = `type-or-die-${date.getFullYear()}-${fmt(date.getMonth()+1)}-${fmt(date.getDate())}.txt`;
+    const fmt = (n: number) => n.toString().padStart(2, '0');
+    a.download = `type-or-die-${date.getFullYear()}-${fmt(date.getMonth() + 1)}-${fmt(date.getDate())}.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -443,107 +443,107 @@ export default function App() {
 
   if (appState === 'config') {
     return (
-       <>
-        <SettingsModal 
-            isOpen={showSettings} 
-            onClose={() => setShowSettings(false)} 
-            config={config}
-            onSave={(c) => updateDefaults(c, true)}
-            canEditDefaults={true}
+      <>
+        <SettingsModal
+          isOpen={showSettings}
+          onClose={() => setShowSettings(false)}
+          config={config}
+          onSave={(c) => updateDefaults(c, true)}
+          canEditDefaults={true}
         />
         <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-mono p-4 pt-8 md:pt-10">
 
-            <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-xl max-w-md w-full border border-gray-200 dark:border-gray-700 text-center">
-                <div className="flex items-center justify-center mb-6 text-red-600 dark:text-red-500"><Skull size={48} /></div>
-                <h1 className="text-3xl font-bold mb-2 uppercase tracking-widest">Type or Die</h1>
-                <p className="text-gray-500 text-sm">Strict Append-Only Mode</p>
+          <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-xl max-w-md w-full border border-gray-200 dark:border-gray-700 text-center">
+            <div className="flex items-center justify-center mb-6 text-red-600 dark:text-red-500"><Skull size={48} /></div>
+            <h1 className="text-3xl font-bold mb-2 uppercase tracking-widest">Type or Die</h1>
+            <p className="text-gray-500 text-sm">Strict Append-Only Mode</p>
 
-                <div className="mt-6 mb-6 space-y-4 text-left text-sm">
-                  <div>
-                    <label className="block font-semibold mb-1 text-xs uppercase tracking-wide">
-                      Target Time (Minutes)
-                    </label>
-                    <input
-                      type="number"
-                      min={1}
-                      value={config.targetMinutes}
-                      onChange={(e) => {
-                        const v = Number(e.target.value);
-                        setConfig((prev) => ({ ...prev, targetMinutes: Math.max(1, isNaN(v) ? 1 : v) }));
-                      }}
-                      className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded"
-                    />
-                  </div>
+            <div className="mt-6 mb-6 space-y-4 text-left text-sm">
+              <div>
+                <label className="block font-semibold mb-1 text-xs uppercase tracking-wide">
+                  Target Time (Minutes)
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  value={config.targetMinutes}
+                  onChange={(e) => {
+                    const v = Number(e.target.value);
+                    setConfig((prev) => ({ ...prev, targetMinutes: Math.max(1, isNaN(v) ? 1 : v) }));
+                  }}
+                  className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded"
+                />
+              </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block font-semibold mb-1 text-xs uppercase tracking-wide">
-                        Warn Idle (s)
-                      </label>
-                      <input
-                        type="number"
-                        min={1}
-                        value={config.warnTime}
-                        onChange={(e) => {
-                          const v = Number(e.target.value);
-                          setConfig((prev) => ({ ...prev, warnTime: Math.max(1, isNaN(v) ? 1 : v) }));
-                        }}
-                        className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded"
-                      />
-                    </div>
-                    <div>
-                      <label className="block font-semibold mb-1 text-xs uppercase tracking-wide">
-                        Wipe Idle (s)
-                      </label>
-                      <input
-                        type="number"
-                        min={1}
-                        value={config.wipeTime}
-                        onChange={(e) => {
-                          const v = Number(e.target.value);
-                          setConfig((prev) => ({ ...prev, wipeTime: Math.max(1, isNaN(v) ? 1 : v) }));
-                        }}
-                        className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded"
-                      />
-                    </div>
-                  </div>
-
-                  <p className="text-[11px] text-gray-400">
-                    If you stop typing for longer than Wipe, the session is wiped. You will get a falshing warning after Warn Time until it is wiped.
-                  </p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-semibold mb-1 text-xs uppercase tracking-wide">
+                    Warn Idle (s)
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={config.warnTime}
+                    onChange={(e) => {
+                      const v = Number(e.target.value);
+                      setConfig((prev) => ({ ...prev, warnTime: Math.max(1, isNaN(v) ? 1 : v) }));
+                    }}
+                    className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded"
+                  />
                 </div>
-
-                <button
-                    onClick={() => startSession(config)}
-                    className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded shadow-lg transform transition hover:scale-[1.02] flex items-center justify-center gap-2"
-                >
-                    <Play size={20} /> START SESSION
-                </button>
-
-                <div className="mt-4 text-xs text-gray-400">
-                    {config.targetMinutes}m Target · Warn {config.warnTime}s · Wipe {config.wipeTime}s
+                <div>
+                  <label className="block font-semibold mb-1 text-xs uppercase tracking-wide">
+                    Wipe Idle (s)
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={config.wipeTime}
+                    onChange={(e) => {
+                      const v = Number(e.target.value);
+                      setConfig((prev) => ({ ...prev, wipeTime: Math.max(1, isNaN(v) ? 1 : v) }));
+                    }}
+                    className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded"
+                  />
                 </div>
+              </div>
 
-                <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 text-left">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                      Appearance & defaults
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-gray-400 mb-3">
-                    Adjust font, editor width, theme, and default target/warn/wipe values for future sessions.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setShowSettings(true)}
-                    className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                  >
-                    <Settings size={16} /> Open appearance & defaults
-                  </button>
-                </div>
+              <p className="text-[11px] text-gray-400">
+                If you stop typing for longer than Wipe, the session is wiped. You will get a falshing warning after Warn Time until it is wiped.
+              </p>
             </div>
+
+            <button
+              onClick={() => startSession(config)}
+              className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded shadow-lg transform transition hover:scale-[1.02] flex items-center justify-center gap-2"
+            >
+              <Play size={20} /> START SESSION
+            </button>
+
+            <div className="mt-4 text-xs text-gray-400">
+              {config.targetMinutes}m Target · Warn {config.warnTime}s · Wipe {config.wipeTime}s
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 text-left">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  Appearance & defaults
+                </span>
+              </div>
+              <p className="text-[11px] text-gray-400 mb-3">
+                Adjust font, editor width, theme, and default target/warn/wipe values for future sessions.
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowSettings(true)}
+                className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                <Settings size={16} /> Open appearance & defaults
+              </button>
+            </div>
+          </div>
         </div>
-       </>
+      </>
     );
   }
 
@@ -552,13 +552,13 @@ export default function App() {
   let overlayOpacity = 0;
   if (isWarning) {
     const progress = (idleSeconds - config.warnTime) / (config.wipeTime - config.warnTime);
-    overlayOpacity = Math.min(Math.max(progress, 0.2), 1); 
+    overlayOpacity = Math.min(Math.max(progress, 0.2), 1);
   }
 
   return (
     <div className="relative w-full h-screen overflow-hidden flex flex-col bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300 pt-6 md:pt-8"
-         style={{ fontFamily: config.fontFamily }}>
-      
+      style={{ fontFamily: config.fontFamily }}>
+
       <ToastContainer toasts={toasts} />
 
       {/* HEADER */}
@@ -569,33 +569,33 @@ export default function App() {
             <span>{formatTime(sessionSeconds)} / {formatTime(targetSeconds)}</span>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-6 text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-           <div className="flex items-center gap-1"><AlertTriangle size={14} /> Warn: {config.warnTime}s</div>
-           <div className="flex items-center gap-1"><Skull size={14} /> Wipe: {config.wipeTime}s</div>
+          <div className="flex items-center gap-1"><AlertTriangle size={14} /> Warn: {config.warnTime}s</div>
+          <div className="flex items-center gap-1"><Skull size={14} /> Wipe: {config.wipeTime}s</div>
         </div>
 
         <div className="flex items-center gap-4">
-           {targetReached ? (
-             <button 
-               onClick={handleManualSave}
-               className="text-green-500 flex items-center gap-1 text-sm animate-pulse hover:underline"
-               title="Click to Save"
-             >
-               <Download size={16} /> Save Unlocked
-             </button>
-           ) : (
-             <span className="text-gray-400 flex items-center gap-1 text-sm cursor-not-allowed">
-               <Save size={16} /> Locked
-             </span>
-           )}
-           <button
-             onClick={() => setFocusMode(!focusMode)}
-             className="p-1.5 rounded hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300"
-             title="Focus Mode"
-           >
-             {focusMode ? <EyeOff size={18} /> : <Eye size={18} />}
-           </button>
+          {targetReached ? (
+            <button
+              onClick={handleManualSave}
+              className="text-green-500 flex items-center gap-1 text-sm animate-pulse hover:underline"
+              title="Click to Save"
+            >
+              <Download size={16} /> Save Unlocked
+            </button>
+          ) : (
+            <span className="text-gray-400 flex items-center gap-1 text-sm cursor-not-allowed">
+              <Save size={16} /> Locked
+            </span>
+          )}
+          <button
+            onClick={() => setFocusMode(!focusMode)}
+            className="p-1.5 rounded hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300"
+            title="Focus Mode"
+          >
+            {focusMode ? <EyeOff size={18} /> : <Eye size={18} />}
+          </button>
         </div>
       </div>
 
@@ -603,10 +603,10 @@ export default function App() {
       <div className="relative flex-1 w-full overflow-hidden">
         <div ref={scrollContainerRef} className="absolute inset-0 overflow-y-hidden" style={{ scrollBehavior: 'smooth' }}>
           <div className="mx-auto min-h-full relative" style={{ paddingTop: '50vh', paddingBottom: '50vh', maxWidth: `${config.maxWidth}ch` }}>
-            <div 
-                ref={contentRef} 
-                className="whitespace-pre-wrap break-words leading-relaxed outline-none"
-                style={{ fontSize: `${config.fontSize}px` }}
+            <div
+              ref={contentRef}
+              className="whitespace-pre-wrap break-words leading-relaxed outline-none"
+              style={{ fontSize: `${config.fontSize}px` }}
             >
               {text}
               {appState === 'active' && <span className="inline-block w-3 h-[1.2em] bg-gray-800 dark:bg-gray-200 ml-1 align-middle animate-pulse"></span>}
@@ -615,10 +615,10 @@ export default function App() {
           </div>
         </div>
 
-        <div className="absolute inset-0 bg-red-600 pointer-events-none z-30 mix-blend-multiply transition-opacity duration-100" 
-          style={{ opacity: isWarning ? overlayOpacity * 0.6 : 0, animation: isWarning ? 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite' : 'none' }} 
+        <div className="absolute inset-0 bg-red-600 pointer-events-none z-30 mix-blend-multiply transition-opacity duration-100"
+          style={{ opacity: isWarning ? overlayOpacity * 0.6 : 0, animation: isWarning ? 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite' : 'none' }}
         />
-        
+
         {appState === 'failed' && (
           <div className="absolute inset-0 bg-black z-40 flex flex-col items-center justify-center text-red-600 animate-in fade-in duration-300">
             <h1 className="text-9xl font-black tracking-tighter mb-4">FAILED</h1>
@@ -627,7 +627,7 @@ export default function App() {
         )}
 
         {!hasStartedTyping && appState === 'active' && !focusMode && (
-           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-gray-400 text-sm animate-pulse">Start typing to begin...</div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-gray-400 text-sm animate-pulse">Start typing to begin...</div>
         )}
       </div>
     </div>
