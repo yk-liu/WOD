@@ -174,7 +174,7 @@ export default function App() {
   const textEndRef = useRef<HTMLDivElement>(null);
   const requestRef = useRef<number | null>(null);
   const textRef = useRef(text);
-  const prevTargetReachedRef = useRef(targetReached);
+  const prevTargetReachedRef = useRef(false);
 
   // -- INIT: Load Defaults & IPC Listeners --
   useEffect(() => {
