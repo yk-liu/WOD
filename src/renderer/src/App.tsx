@@ -174,6 +174,7 @@ export default function App() {
   const textEndRef = useRef<HTMLDivElement>(null);
   const requestRef = useRef<number | null>(null);
   const textRef = useRef(text);
+  const prevTargetReachedRef = useRef(targetReached);
 
   // -- INIT: Load Defaults & IPC Listeners --
   useEffect(() => {
@@ -264,6 +265,17 @@ export default function App() {
     }, 10000);
     return () => window.clearInterval(interval);
   }, [appState, hasStartedTyping, config]); 
+
+  // -- EFFECT: AUTO-SAVE FILE ON TARGET REACHED --
+  useEffect(() => {
+    // Detect a rising edge: when targetReached changes from false -> true
+    if (!prevTargetReachedRef.current && targetReached) {
+      // Automatically trigger a file save once
+      handleManualSave();
+      addToast('Target reached – file auto-saved.');
+    }
+    prevTargetReachedRef.current = targetReached;
+  }, [targetReached]);
 
   // -- SCROLLING --
   useLayoutEffect(() => {
@@ -378,7 +390,7 @@ export default function App() {
             config={config}
             onSave={updateDefaults}
         />
-        <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-mono p-4 relative">
+        <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-mono p-4 pt-8 md:pt-10 relative">
             <button 
                 onClick={() => setShowSettings(true)}
                 className="absolute top-6 right-6 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors"
@@ -414,7 +426,7 @@ export default function App() {
   }
 
   return (
-    <div className="relative w-full h-screen overflow-hidden flex flex-col bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300"
+    <div className="relative w-full h-screen overflow-hidden flex flex-col bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300 pt-6 md:pt-8"
          style={{ fontFamily: config.fontFamily }}>
       
       <ToastContainer toasts={toasts} />
@@ -422,7 +434,7 @@ export default function App() {
 
       {/* HEADER */}
       <div className={`flex items-center justify-between px-6 py-3 bg-gray-200 dark:bg-gray-800 shadow-sm z-20 transition-opacity duration-300 ${focusMode ? 'opacity-0 hover:opacity-100' : 'opacity-100'}`}>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 ml-16 md:ml-20">
           <div className={`flex items-center gap-2 font-bold ${targetReached ? 'text-green-600 dark:text-green-400' : ''}`}>
             <Clock size={18} />
             <span>{formatTime(sessionSeconds)} / {formatTime(targetSeconds)}</span>
