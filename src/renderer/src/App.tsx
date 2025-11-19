@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
-import { AlertTriangle, Save, Clock, Skull, Play, Eye, EyeOff, Settings, X } from 'lucide-react';
+import { AlertTriangle, Save, Clock, Skull, Play, Eye, EyeOff, Settings, X, Download } from 'lucide-react';
 
 // --- UTILITIES ---
 
@@ -20,8 +20,8 @@ type AppConfig = {
   wipeTime: number;
   theme: 'system' | 'light' | 'dark';
   fontFamily: string; 
-  maxWidth: number;   // in 'ch' units
-  fontSize: number;   // in 'px'
+  maxWidth: number;   
+  fontSize: number;   
 };
 
 const DEFAULT_CONFIG: AppConfig = {
@@ -126,7 +126,6 @@ const SettingsModal = ({
               placeholder="e.g. Helvetica, Arial, sans-serif"
               className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded font-mono text-sm"
             />
-            <p className="text-xs text-gray-400 mt-1">Enter any installed system font name.</p>
           </div>
           
           <hr className="border-gray-200 dark:border-gray-700" />
@@ -185,18 +184,10 @@ export default function App() {
       } catch (e) { console.error('Failed to load prefs'); }
     }
 
-    // Listener for Native Menu "Preferences..."
     const handleOpenSettings = () => {
-      if (appState === 'config') {
-        setShowSettings(true);
-      } else {
-        // Optionally allow settings during typing, but pausing might be safer
-        // For now, we just show it.
-        setShowSettings(true);
-      }
+      setShowSettings(true);
     };
 
-    // Check if electron API is available (it should be via preload)
     if ((window as any).electron && (window as any).electron.ipcRenderer) {
       (window as any).electron.ipcRenderer.on('open-settings', handleOpenSettings);
     }
@@ -206,7 +197,7 @@ export default function App() {
          (window as any).electron.ipcRenderer.removeAllListeners('open-settings');
        }
     };
-  }, [appState]);
+  }, []);
 
   const updateDefaults = (newConfig: AppConfig) => {
     setConfig(newConfig);
@@ -445,14 +436,21 @@ export default function App() {
 
         <div className="flex items-center gap-4">
            {targetReached ? (
-             <span className="text-green-500 flex items-center gap-1 text-sm animate-pulse"><Save size={16} /> Save Unlocked</span>
+             <button 
+               onClick={handleManualSave}
+               className="text-green-500 flex items-center gap-1 text-sm animate-pulse hover:underline"
+               title="Click to Save"
+             >
+               <Download size={16} /> Save Unlocked
+             </button>
            ) : (
-             <span className="text-gray-400 flex items-center gap-1 text-sm"><Save size={16} /> Locked</span>
+             <span className="text-gray-400 flex items-center gap-1 text-sm cursor-not-allowed">
+               <Save size={16} /> Locked
+             </span>
            )}
            <button onClick={() => setFocusMode(!focusMode)} className="p-1.5 rounded hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300" title="Focus Mode">
              {focusMode ? <EyeOff size={18} /> : <Eye size={18} />}
            </button>
-           {/* In-app Settings Button (also accessible via Menu Bar) */}
            <button onClick={() => setShowSettings(true)} className="p-1.5 rounded hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300" title="Settings">
              <Settings size={18} />
            </button>
