@@ -49,24 +49,24 @@ const ToastContainer = ({ toasts }: { toasts: any[] }) => (
   </div>
 );
 
-const SettingsModal = ({ 
-  isOpen, 
-  onClose, 
-  config, 
-  onSave 
-}: { 
-  isOpen: boolean; 
-  onClose: () => void; 
-  config: AppConfig; 
-  onSave: (c: AppConfig) => void 
+const SettingsModal = ({
+  isOpen,
+  onClose,
+  config,
+  onSave,
+  canEditDefaults,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  config: AppConfig;
+  onSave: (c: AppConfig) => void;
+  canEditDefaults: boolean;
 }) => {
   const [localConfig, setLocalConfig] = useState(config);
 
   useEffect(() => {
     if (isOpen) setLocalConfig(config);
   }, [isOpen, config]);
-
-  if (!isOpen) return null;
 
   const handleChange = (field: keyof AppConfig, value: any) => {
     setLocalConfig(prev => ({ ...prev, [field]: value }));
@@ -78,8 +78,12 @@ const SettingsModal = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-2xl max-w-md w-full border border-gray-200 dark:border-gray-700 max-h-[90vh] overflow-y-auto">
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-150 ${
+        isOpen ? 'bg-black/40 opacity-100 pointer-events-auto' : 'bg-black/0 opacity-0 pointer-events-none'
+      }`}
+    >
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl max-w-md w-full border border-gray-200 dark:border-gray-700 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold">Preferences</h2>
           <button onClick={onClose}><X size={20} /></button>
@@ -131,22 +135,59 @@ const SettingsModal = ({
           <hr className="border-gray-200 dark:border-gray-700" />
 
           {/* Defaults */}
-          <div>
-             <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Default Target (Mins)</label>
-             <input 
-               type="number" 
-               value={localConfig.targetMinutes}
-               onChange={(e) => handleChange('targetMinutes', parseInt(e.target.value))}
-               className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded"
-             />
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold uppercase text-gray-500 mb-1 flex justify-between items-center">
+                <span>Default Target (Mins)</span>
+                {!canEditDefaults && (
+                  <span className="text-[10px] font-normal text-gray-400">
+                    Changeable on start screen only
+                  </span>
+                )}
+              </label>
+              <input
+                type="number"
+                value={localConfig.targetMinutes}
+                onChange={(e) => handleChange('targetMinutes', parseInt(e.target.value))}
+                disabled={!canEditDefaults}
+                className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold uppercase text-gray-500 mb-1">
+                  Default Warn (s)
+                </label>
+                <input
+                  type="number"
+                  value={localConfig.warnTime}
+                  onChange={(e) => handleChange('warnTime', parseInt(e.target.value))}
+                  disabled={!canEditDefaults}
+                  className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold uppercase text-gray-500 mb-1">
+                  Default Wipe (s)
+                </label>
+                <input
+                  type="number"
+                  value={localConfig.wipeTime}
+                  onChange={(e) => handleChange('wipeTime', parseInt(e.target.value))}
+                  disabled={!canEditDefaults}
+                  className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+              </div>
+            </div>
           </div>
         </div>
 
         <button 
           onClick={handleSave}
-          className="mt-6 w-full bg-black dark:bg-white text-white dark:text-black font-bold py-3 rounded hover:opacity-90"
+          className="mt-6 w-full bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-400 text-white font-bold py-3 rounded transition-colors"
         >
-          Save Defaults
+          Save Appearance & Defaults
         </button>
       </div>
     </div>
@@ -200,8 +241,22 @@ export default function App() {
     };
   }, []);
 
-  const updateDefaults = (newConfig: AppConfig) => {
-    setConfig(newConfig);
+  const updateDefaults = (newConfig: AppConfig, applyToCurrentSession: boolean) => {
+    if (applyToCurrentSession) {
+      // Used from the config screen: this becomes the live session config.
+      setConfig(newConfig);
+    } else {
+      // Used from the header while a session is active:
+      // only apply visual changes, keep timing strict for the running session.
+      setConfig((prev) => ({
+        ...prev,
+        fontFamily: newConfig.fontFamily,
+        maxWidth: newConfig.maxWidth,
+        fontSize: newConfig.fontSize,
+        theme: newConfig.theme,
+      }));
+    }
+    // In both cases, store full defaults for next sessions.
     localStorage.setItem(PREFS_KEY, JSON.stringify(newConfig));
   };
 
@@ -292,7 +347,12 @@ export default function App() {
   };
 
   const startSession = (newConfig: AppConfig) => {
-    updateDefaults(newConfig);
+    // Ensure the timing parameters are sane before starting.
+    if (newConfig.wipeTime <= newConfig.warnTime) {
+      addToast('Wipe time must be greater than Warn time.');
+      return;
+    }
+    updateDefaults(newConfig, true);
     setAppState('active');
     setText('');
     setSessionStartTime(Date.now());
@@ -388,28 +448,98 @@ export default function App() {
             isOpen={showSettings} 
             onClose={() => setShowSettings(false)} 
             config={config}
-            onSave={updateDefaults}
+            onSave={(c) => updateDefaults(c, true)}
+            canEditDefaults={true}
         />
-        <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-mono p-4 pt-8 md:pt-10 relative">
-            <button 
-                onClick={() => setShowSettings(true)}
-                className="absolute top-6 right-6 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors"
-            >
-                <Settings size={24} />
-            </button>
+        <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-mono p-4 pt-8 md:pt-10">
 
             <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-xl max-w-md w-full border border-gray-200 dark:border-gray-700 text-center">
                 <div className="flex items-center justify-center mb-6 text-red-600 dark:text-red-500"><Skull size={48} /></div>
                 <h1 className="text-3xl font-bold mb-2 uppercase tracking-widest">Type or Die</h1>
-                <p className="text-gray-500 text-sm mb-8">Strict Append-Only Mode</p>
+                <p className="text-gray-500 text-sm">Strict Append-Only Mode</p>
+
+                <div className="mt-6 mb-6 space-y-4 text-left text-sm">
+                  <div>
+                    <label className="block font-semibold mb-1 text-xs uppercase tracking-wide">
+                      Target Time (Minutes)
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={config.targetMinutes}
+                      onChange={(e) => {
+                        const v = Number(e.target.value);
+                        setConfig((prev) => ({ ...prev, targetMinutes: Math.max(1, isNaN(v) ? 1 : v) }));
+                      }}
+                      className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-semibold mb-1 text-xs uppercase tracking-wide">
+                        Warn Idle (s)
+                      </label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={config.warnTime}
+                        onChange={(e) => {
+                          const v = Number(e.target.value);
+                          setConfig((prev) => ({ ...prev, warnTime: Math.max(1, isNaN(v) ? 1 : v) }));
+                        }}
+                        className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-semibold mb-1 text-xs uppercase tracking-wide">
+                        Wipe Idle (s)
+                      </label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={config.wipeTime}
+                        onChange={(e) => {
+                          const v = Number(e.target.value);
+                          setConfig((prev) => ({ ...prev, wipeTime: Math.max(1, isNaN(v) ? 1 : v) }));
+                        }}
+                        className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded"
+                      />
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] text-gray-400">
+                    If you stop typing for longer than Wipe, the session is wiped. You will get a falshing warning after Warn Time until it is wiped.
+                  </p>
+                </div>
+
                 <button
                     onClick={() => startSession(config)}
                     className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded shadow-lg transform transition hover:scale-[1.02] flex items-center justify-center gap-2"
                 >
                     <Play size={20} /> START SESSION
                 </button>
+
                 <div className="mt-4 text-xs text-gray-400">
-                    {config.targetMinutes}m Target · {config.wipeTime}s Wipe
+                    {config.targetMinutes}m Target · Warn {config.warnTime}s · Wipe {config.wipeTime}s
+                </div>
+
+                <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 text-left">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Appearance & defaults
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-gray-400 mb-3">
+                    Adjust font, editor width, theme, and default target/warn/wipe values for future sessions.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowSettings(true)}
+                    className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <Settings size={16} /> Open appearance & defaults
+                  </button>
                 </div>
             </div>
         </div>
@@ -430,7 +560,6 @@ export default function App() {
          style={{ fontFamily: config.fontFamily }}>
       
       <ToastContainer toasts={toasts} />
-      <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} config={config} onSave={updateDefaults} />
 
       {/* HEADER */}
       <div className={`flex items-center justify-between px-6 py-3 bg-gray-200 dark:bg-gray-800 shadow-sm z-20 transition-opacity duration-300 ${focusMode ? 'opacity-0 hover:opacity-100' : 'opacity-100'}`}>
@@ -460,11 +589,12 @@ export default function App() {
                <Save size={16} /> Locked
              </span>
            )}
-           <button onClick={() => setFocusMode(!focusMode)} className="p-1.5 rounded hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300" title="Focus Mode">
+           <button
+             onClick={() => setFocusMode(!focusMode)}
+             className="p-1.5 rounded hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300"
+             title="Focus Mode"
+           >
              {focusMode ? <EyeOff size={18} /> : <Eye size={18} />}
-           </button>
-           <button onClick={() => setShowSettings(true)} className="p-1.5 rounded hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300" title="Settings">
-             <Settings size={18} />
            </button>
         </div>
       </div>
